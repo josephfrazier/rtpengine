@@ -2346,20 +2346,24 @@ static void __rtcp_mux_logic(const struct sdp_ng_flags *flags, struct call_media
 	}
 }
 
-static void __fingerprint_changed(struct call_media *m) {
+static void dtls_shutdown_all(struct call_media *m) {
 	GList *l;
 	struct packet_stream *ps;
-
-	if (!m->fingerprint.hash_func)
-		return;
-
-	ilog(LOG_INFO, "DTLS fingerprint changed, restarting DTLS");
 
 	for (l = m->streams.head; l; l = l->next) {
 		ps = l->data;
 		PS_CLEAR(ps, FINGERPRINT_VERIFIED);
 		dtls_shutdown(ps);
 	}
+}
+
+static void __fingerprint_changed(struct call_media *m) {
+
+	if (!m->fingerprint.hash_func)
+		return;
+
+	ilog(LOG_INFO, "DTLS fingerprint changed, restarting DTLS");
+	dtls_shutdown_all(m);
 }
 
 static void __set_all_tos(struct call *c) {
@@ -2656,7 +2660,8 @@ init:
 			return -1;
 
 		/* we are now ready to fire up ICE if so desired and requested */
-		ice_update(other_media->ice_agent, sp);
+		if (ice_update(other_media->ice_agent, sp) == 1)
+			dtls_shutdown_all(other_media);
 		ice_update(media->ice_agent, NULL); /* this is in case rtcp-mux has changed */
 	}
 

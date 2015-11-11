@@ -311,7 +311,8 @@ void ice_restart(struct ice_agent *ag) {
 }
 
 /* called with the call lock held in W, hence agent doesn't need to be locked */
-void ice_update(struct ice_agent *ag, struct stream_params *sp) {
+// returns 1 if ICE was restarted
+int ice_update(struct ice_agent *ag, struct stream_params *sp) {
 	GList *l, *k;
 	struct ice_candidate *cand, *dup;
 	struct call_media *media;
@@ -320,9 +321,10 @@ void ice_update(struct ice_agent *ag, struct stream_params *sp) {
 	unsigned int comps;
 	struct packet_stream *components[MAX_COMPONENTS], *ps;
 	GQueue *candidates;
+	int ret = 0;
 
 	if (!ag)
-		return;
+		return 0;
 
 	atomic64_set(&ag->last_activity, poller_now);
 	media = ag->media;
@@ -332,12 +334,18 @@ void ice_update(struct ice_agent *ag, struct stream_params *sp) {
 
 	if (sp) {
 		/* check for ICE restarts */
-		if (ag->ufrag[0].s && sp->ice_ufrag.s && str_cmp_str(&ag->ufrag[0], &sp->ice_ufrag))
+		if (ag->ufrag[0].s && sp->ice_ufrag.s && str_cmp_str(&ag->ufrag[0], &sp->ice_ufrag)) {
 			__ice_restart(ag);
-		else if (ag->pwd[0].s && sp->ice_pwd.s && str_cmp_str(&ag->pwd[0], &sp->ice_pwd))
+			ret = 1;
+		}
+		else if (ag->pwd[0].s && sp->ice_pwd.s && str_cmp_str(&ag->pwd[0], &sp->ice_pwd)) {
 			__ice_restart(ag);
-		else if (ag->local_interface != media->interface)
+			ret = 1;
+		}
+		else if (ag->local_interface != media->interface) {
 			__ice_restart(ag);
+			ret = 1;
+		}
 
 		/* update remote info */
 		if (sp->ice_ufrag.s)
@@ -452,6 +460,8 @@ pair:
 		__do_ice_checks(ag);
 	else
 		__agent_shutdown(ag);
+
+	return ret;
 }
 
 
