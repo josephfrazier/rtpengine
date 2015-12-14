@@ -188,6 +188,7 @@ option and which are reproduced below:
 	  -G, --graphite-interval=INT      Graphite data statistics send interval
 	  --graphite-prefix=STRING         Graphite prefix for every line
 	  --max-sessions=INT               Limit the number of maximum concurrent sessions
+	  --recording-dir=FILE             Spool directory where PCAP call recording data goes
 
 Most of these options are indeed optional, with two exceptions. It's mandatory to specify at least one local
 IP address through `--interface`, and at least one of the `--listen-...` options must be given.
@@ -385,6 +386,28 @@ The options are described in more detail below.
 	Disable feature: 'rtpengine-ctl set maxsessions -1'
 	By default, the feature is disabled (i.e. maxsessions == -1).
 
+* --recording-dir
+
+	An optional argument to specify a path to a directory where PCAP recording
+	files and recording metadata files should be stored. If not specified, the the
+	rtpengine will default to placing recorded files in `/var/spool/rtpengine/` if
+	it exists. PCAP files will be stored within a "pcap" subdirectory and metadata
+	within a "metadata" subdirectory.
+
+	The format for a metadata file is (with a trailing newline):
+
+		/path/to/rec-pcap01.pcap
+		/path/to/rec-pcap02.pcap
+		...
+		/path/to/rec-pcap0n.pcap
+
+		start timestamp (YYYY-MM-DDThh:mm:ss)
+		end timestamp   (YYYY-MM-DDThh:mm:ss)
+
+		generic metadata
+
+	Metadata files will appear in the subdirectory when the call completes.
+	PCAP files will be written to the subdirectory as the call is being recorded.
 
 A typical command line (enabling both UDP and NG protocols) thus may look like:
 
@@ -556,7 +579,7 @@ then the start-up sequence might look like this:
 With this setup, the SIP proxy can choose which instance of *rtpengine* to talk to and thus which local
 interface to use by sending its control messages to either port 2223 or port 2224.
 
-REDIS Database interaction 
+REDIS Database interaction
 -------------------------
 
 Rtpengine is able to write call details in redis database and retore the calls from the same database.
@@ -762,7 +785,7 @@ Optionally included keys are:
 	__run the above algorithm__!
 
 	Round robin for both legs of the stream:
-		{ ..., "direction": [ "round-robin-calls", "round-robin-calls" ], ... } 
+		{ ..., "direction": [ "round-robin-calls", "round-robin-calls" ], ... }
 
 	Round robin for first leg and and select "pub" for the second leg of the stream:
 		{ ..., "direction": [ "round-robin-calls", "pub" ], ... }
@@ -887,6 +910,29 @@ Optionally included keys are:
 
 		Negates the respective option. This is useful if one of the session parameters was offered by
 		an SDES endpoint, but it should not be offered on the far side if this endpoint also speaks SDES.
+
+* `record-call`
+
+	Contains either the string "yes" or the string "no". This tells the rtpengine
+	whether or not to record the call to PCAP files. If the call is recorded, it
+	will generate PCAP files for each stream and a metadata file for each call.
+
+	See the `--recording-dir` option above.
+
+	Note that this is not a duplication of the `start_recording` message. If calls
+	are being kernelized, then they cannot be recorded. The `start_recording`
+	message does not have a way to prevent a call from being kernelized, so we need
+	to use this flag when we send an `offer` or `answer` message.
+
+* `metadata`
+
+	This is a generic metadata string. The metadata will be written to the bottom of
+	metadata files within `/path/to/recording_dir/metadata/`. This can be used to
+	record additional information about recorded calls. `metadata` values passed in
+	through subsequent messages will overwrite previous metadata values.
+
+	See the `--recording-dir` option above.
+
 
 An example of a complete `offer` request dictionary could be (SDP body abbreviated):
 
