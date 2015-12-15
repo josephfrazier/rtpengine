@@ -29,7 +29,7 @@
 #include "ice.h"
 #include "socket.h"
 #include "media_socket.h"
-#include "fs.h"
+#include "recording.h"
 
 
 
@@ -454,7 +454,7 @@ static void init_everything() {
 
 	socket_init();
 	log_init();
-	fs_init(spooldir);
+	recording_fs_init(spooldir);
 	clock_gettime(CLOCK_REALTIME, &ts);
 	srandom(ts.tv_sec ^ ts.tv_nsec);
 	SSL_library_init();
