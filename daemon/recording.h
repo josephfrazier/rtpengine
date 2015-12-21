@@ -45,7 +45,7 @@ void recording_fs_init(char *spooldir);
  *     generic metadata
  *
  */
-str *meta_setup_file(struct recording *recording);
+str *meta_setup_file(struct recording *recording, str callid);
 
 /**
  * Writes metadata to metafile, closes file, and renames it to finished location.
@@ -57,7 +57,7 @@ int meta_finish_file(struct call *call);
  * Generate a random PCAP filepath to write recorded RTP stream.
  * Returns path to created file.
  */
-str *recording_setup_file(struct recording *recording);
+str *recording_setup_file(struct recording *recording, str callid);
 
 /**
  * Flushes PCAP file, closes the dumper and descriptors, and frees object memory.
