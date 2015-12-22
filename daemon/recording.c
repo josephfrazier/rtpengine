@@ -197,6 +197,7 @@ int meta_finish_file(struct call *call) {
 
 /**
  * Generate a random PCAP filepath to write recorded RTP stream.
+ * Returns path to created file.
  */
 str *recording_setup_file(struct recording *recording, str callid) {
 	str *recording_path = NULL;
