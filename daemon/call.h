@@ -415,6 +415,7 @@ struct call {
 	char			*created_from;
 	sockaddr_t		created_from_addr;
 
+	int record_call;
 	struct recording *recording;
 };
 
